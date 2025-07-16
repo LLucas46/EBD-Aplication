@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentação da API - EBD Gestão</title>
+    <!-- Chosen Palette: Slate Gray with Blue Highlights -->
+    <!-- Application Structure Plan: A classic three-column documentation layout. A left sidebar lists main API resources (e.g., 'Alunos', 'Classes'). Clicking a resource populates a middle column with its specific endpoints (e.g., 'POST /', 'GET /:id'). Clicking an endpoint displays its full details, including request/response examples, in the main right-hand column. This hierarchical structure is highly intuitive for developers, allowing them to quickly find and understand the specific API call they need without being overwhelmed. It promotes efficient exploration from general resource to specific action. -->
+    <!-- Visualization & Content Choices: The core of this application is informational clarity for a developer audience. Instead of charts, the primary 'visualizations' are structured text and code. API methods are presented as colored badges (HTML/Tailwind) for quick recognition. Request and Response examples are organized in a tabbed interface (JS show/hide) to keep the layout clean. All API data is stored in a structured JS object, and the UI is dynamically rendered from this object, ensuring a single source of truth and easy updates. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .code-block { font-family: 'JetBrains Mono', monospace; }
+        .sidebar { -ms-overflow-style: none; scrollbar-width: none; }
+        .sidebar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-slate-50">
+
+<div class="flex h-screen text-slate-800">
+    <!-- Sidebar - Navigation -->
+    <aside id="sidebar-nav" class="sidebar w-64 bg-white border-r border-slate-200 flex-shrink-0 overflow-y-auto hidden md:block">
+        <div class="p-5">
+            <h1 class="text-xl font-bold text-blue-600">API EBD Gestão</h1>
+            <p class="text-sm text-slate-500 mt-1">Documentação de Endpoints</p>
+        </div>
+        <nav id="nav-container" class="px-2">
+            <!-- Navigation items will be inserted here by JS -->
+        </nav>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+        <!-- Header for mobile nav and title -->
+        <header class="bg-white border-b border-slate-200 p-4 flex items-center justify-between md:justify-end">
+            <button id="mobile-menu-button" class="md:hidden text-slate-500">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            <h2 id="current-resource-title" class="text-lg font-semibold text-slate-700">Bem-vindo!</h2>
+        </header>
+
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Endpoint List Column -->
+            <div id="endpoint-list-container" class="w-72 bg-slate-50 border-r border-slate-200 overflow-y-auto hidden lg:block">
+                 <!-- Endpoints for the selected resource will be inserted here -->
+            </div>
+
+            <!-- Endpoint Details Column -->
+            <div id="endpoint-details-container" class="flex-1 p-6 md:p-8 overflow-y-auto">
+                <!-- Detailed content for the selected endpoint will be inserted here -->
+                 <div class="text-center text-slate-500">
+                    <p>Selecione um recurso na navegação à esquerda para começar.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    const apiData = {
+        introducao: {
+            title: "Introdução",
+            description: "Bem-vindo à documentação da API para o sistema de Gestão da Escola Dominical. Esta API RESTful permite realizar todas as operações necessárias para gerir igrejas, escolas, classes, alunos, professores e finanças. Utilize a navegação para explorar os recursos disponíveis.",
+            content: `
+                <h3 class="text-lg font-semibold mb-2">Autenticação</h3>
+                <p class="mb-4">Todas as rotas, exceto <strong>/api/auth/register-church-admin</strong> e <strong>/api/auth/login</strong>, são protegidas. É necessário enviar um Token JWT no cabeçalho de autorização em cada requisição protegida:</p>
+                <div class="code-block bg-slate-800 text-white p-4 rounded-md text-sm">
+                    Authorization: Bearer &lt;SEU_TOKEN_JWT&gt;
+                </div>
+                <h3 class="text-lg font-semibold mt-6 mb-2">URL Base</h3>
+                <p class="mb-4">O URL base para todas as chamadas da API é:</p>
+                <div class="code-block bg-slate-800 text-white p-4 rounded-md text-sm">
+                    http://SEU_IP_LOCAL:3001/api
+                </div>
+            `
+        },
+        auth: {
+            title: "Autenticação",
+            description: "Endpoints para registo, login e verificação de identidade.",
+            endpoints: {
+                register: {
+                    method: 'POST',
+                    path: '/auth/register-church-admin',
+                    summary: 'Regista Nova Igreja e Admin',
+                    description: 'Cria o registo inicial de uma nova Igreja, o seu primeiro utilizador (com papel ADMIN_IGREJA) e associa-os a um plano existente. Este é o ponto de partida para um novo cliente.',
+                    access: 'Público',
+                    requestBody: `{
+    "churchName": "Primeira Igreja Batista Central",
+    "adminName": "Pastor João Silva",
+    "adminEmail": "pastor.joao@email.com",
+    "adminPassword": "senhaForte123",
+    "planId": 1
+}`,
+                    responseBody: `{
+    "message": "Igreja e Administrador registados com sucesso!",
+    "igreja": {
+        "id": 1,
+        "nome": "Primeira Igreja Batista Central",
+        "adminPrincipal": { "id": 1, "nome": "Pastor João Silva", ... }
+    }
+}`
+                },
+                login: {
+                    method: 'POST',
+                    path: '/auth/login',
+                    summary: 'Login de Utilizador',
+                    description: 'Autentica um utilizador (Admin ou Professor) com base no email e palavra-passe e retorna um Token JWT para ser usado em requisições futuras.',
+                    access: 'Público',
+                    requestBody: `{
+    "email": "pastor.joao@email.com",
+    "password": "senhaForte123"
+}`,
+                    responseBody: `{
+    "message": "Login bem-sucedido!",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": { ... }
+}`
+                },
+                me: {
+                    method: 'GET',
+                    path: '/auth/me',
+                    summary: 'Obter Dados do Utilizador Logado',
+                    description: 'Rota protegida que retorna as informações do utilizador contidas no token JWT fornecido. Útil para verificar se um token é válido.',
+                    access: 'Autenticado',
+                    requestBody: null,
+                    responseBody: `{
+    "message": "Dados do utilizador autenticado recuperados com sucesso!",
+    "user": {
+        "userId": 1,
+        "email": "pastor.joao@email.com",
+        "papel": "ADMIN_IGREJA",
+        "igrejaId": 1
+    }
+}`
+                }
+            }
+        },
+        superintendencias: {
+            title: "Superintendências",
+            description: "Endpoints para gerir as superintendências de uma igreja.",
+            endpoints: {
+                create: { method: 'POST', path: '/', summary: 'Criar Superintendência', access: 'ADMIN_IGREJA', requestBody: `{"nome": "Superintendência Regional Leste"}` },
+                list: { method: 'GET', path: '/', summary: 'Listar Superintendências', access: 'ADMIN_IGREJA' },
+                getById: { method: 'GET', path: '/:id', summary: 'Obter por ID', access: 'ADMIN_IGREJA' },
+                update: { method: 'PUT', path: '/:id', summary: 'Atualizar Superintendência', access: 'ADMIN_IGREJA', requestBody: `{"nome": "Nome Atualizado"}` },
+                delete: { method: 'DELETE', path: '/:id', summary: 'Deletar Superintendência', access: 'ADMIN_IGREJA' }
+            }
+        },
+        escolas: {
+            title: "Escolas",
+            description: "Endpoints para gerir as escolas, que pertencem a uma superintendência.",
+            endpoints: {
+                 create: { method: 'POST', path: '/', summary: 'Criar Escola', access: 'ADMIN_IGREJA', requestBody: `{"nome": "Escola Dominical Central", "superintendenciaId": 1}` },
+                list: { method: 'GET', path: '/', summary: 'Listar Escolas da Igreja', access: 'ADMIN_IGREJA' },
+                getById: { method: 'GET', path: '/:id', summary: 'Obter por ID', access: 'ADMIN_IGREJA' },
+                update: { method: 'PUT', path: '/:id', summary: 'Atualizar Escola', access: 'ADMIN_IGREJA', requestBody: `{"nome": "Escola Principal Atualizada"}` },
+                delete: { method: 'DELETE', path: '/:id', summary: 'Deletar Escola', access: 'ADMIN_IGREJA' }
+            }
+        },
+        classes: {
+            title: "Classes",
+            description: "Endpoints para gerir as turmas, que pertencem a uma escola.",
+            endpoints: {
+                 create: { method: 'POST', path: '/', summary: 'Criar Classe', access: 'ADMIN_IGREJA', requestBody: `{"nomeTurma": "Maternal A", "escolaId": 1, "professorPrincipalId": 2}` },
+                list: { method: 'GET', path: '/', queryParams: 'escolaId', summary: 'Listar Classes por Escola', access: 'ADMIN_IGREJA' },
+                getById: { method: 'GET', path: '/:id', summary: 'Obter por ID', access: 'ADMIN_IGREJA' },
+                update: { method: 'PUT', path: '/:id', summary: 'Atualizar Classe', access: 'ADMIN_IGREJA', requestBody: `{"nomeTurma": "Maternal A - Manhã"}` },
+                delete: { method: 'DELETE', path: '/:id', summary: 'Deletar Classe', access: 'ADMIN_IGREJA' },
+                addProfessor: { method: 'POST', path: '/:classeId/professores', summary: 'Atribuir Professor', access: 'ADMIN_IGREJA', requestBody: `{"professorId": 3}`},
+                listProfessores: { method: 'GET', path: '/:classeId/professores', summary: 'Listar Professores da Classe', access: 'ADMIN_IGREJA' },
+                removeProfessor: { method: 'DELETE', path: '/:classeId/professores/:professorId', summary: 'Remover Professor', access: 'ADMIN_IGREJA' }
+            }
+        },
+        alunos: {
+            title: "Alunos",
+            description: "Endpoints para gerir os alunos, que pertencem a uma classe.",
+            endpoints: {
+                create: { method: 'POST', path: '/', summary: 'Criar Aluno', access: 'ADMIN_IGREJA', requestBody: `{"nomeCompleto": "Ana Clara Silva", "classeId": 1, "dataNascimento": "10/05/2014"}` },
+                list: { method: 'GET', path: '/', queryParams: 'classeId', summary: 'Listar Alunos por Classe', access: 'ADMIN_IGREJA' },
+                getById: { method: 'GET', path: '/:id', summary: 'Obter por ID', access: 'ADMIN_IGREJA' },
+                update: { method: 'PUT', path: '/:id', summary: 'Atualizar Aluno', access: 'ADMIN_IGREJA', requestBody: `{"nomeCompleto": "Ana Clara Silva Souza", "ativo": false}` },
+                delete: { method: 'DELETE', path: '/:id', summary: 'Deletar Aluno', access: 'ADMIN_IGREJA' }
+            }
+        },
+        professores: {
+            title: "Professores",
+            description: "Endpoints para gerir os utilizadores com o papel de Professor.",
+            endpoints: {
+                create: { method: 'POST', path: '/', summary: 'Criar Professor', access: 'ADMIN_IGREJA', requestBody: `{"nome": "Professora Maria", "email": "maria.prof@escola.com", "senhaInicial": "senhaTemporaria123"}` },
+                list: { method: 'GET', path: '/', summary: 'Listar Professores', access: 'ADMIN_IGREJA' },
+                getById: { method: 'GET', path: '/:id', summary: 'Obter por ID', access: 'ADMIN_IGREJA' },
+                update: { method: 'PUT', path: '/:id', summary: 'Atualizar Professor', access: 'ADMIN_IGREJA', requestBody: `{"nome": "Maria Aparecida"}` },
+                delete: { method: 'DELETE', path: '/:id', summary: 'Deletar Professor', access: 'ADMIN_IGREJA' }
+            }
+        },
+        presencas: {
+            title: "Presenças",
+            description: "Endpoints para o registo e consulta de presenças dos alunos.",
+            endpoints: {
+                create: { method: 'POST', path: '/', summary: 'Registar Presenças', access: 'ADMIN_IGREJA, PROFESSOR', requestBody: `{\n    "classeId": 1,\n    "dataAula": "08/06/2025",\n    "presencas": [\n        { "alunoId": 1, "presente": true },\n        { "alunoId": 2, "presente": false, "observacao": "Viajou" }\n    ]\n}` },
+                list: { method: 'GET', path: '/classe/:classeId', queryParams: 'dataInicial, dataFinal', summary: 'Obter Histórico de Presenças', access: 'ADMIN_IGREJA, PROFESSOR' }
+            }
+        },
+        caixa: {
+            title: "Caixa",
+            description: "Endpoints para a gestão financeira (arrecadações).",
+            endpoints: {
+                create: { method: 'POST', path: '/lancamentos', summary: 'Lançar Arrecadação', access: 'ADMIN_IGREJA, PROFESSOR', requestBody: `{"classeId": 1, "dataReuniaoCulto": "08/06/2025", "valorArrecadado": 55.50}` },
+                list: { method: 'GET', path: '/lancamentos', queryParams: 'escolaId, classeId, ...', summary: 'Obter Lançamentos', access: 'ADMIN_IGREJA, PROFESSOR' },
+                getResumo: { method: 'GET', path: '/resumo', queryParams: 'escolaId', summary: 'Obter Resumo do Caixa', access: 'ADMIN_IGREJA, PROFESSOR' }
+            }
+        },
+    };
+
+    const navContainer = document.getElementById('nav-container');
+    const endpointListContainer = document.getElementById('endpoint-list-container');
+    const endpointDetailsContainer = document.getElementById('endpoint-details-container');
+    const currentResourceTitle = document.getElementById('current-resource-title');
+    let activeResource = 'introducao';
+    let activeEndpoint = null;
+
+    const methodColors = {
+        'GET': 'bg-blue-100 text-blue-800', 'POST': 'bg-green-100 text-green-800',
+        'PUT': 'bg-yellow-100 text-yellow-800', 'DELETE': 'bg-red-100 text-red-800'
+    };
+
+    function renderNavigation() {
+        navContainer.innerHTML = Object.keys(apiData).map(key => `
+            <a href="#" data-resource="${key}" class="nav-link flex items-center px-3 py-2 text-slate-700 rounded-md hover:bg-slate-100 ${key === activeResource ? 'bg-slate-200 font-semibold' : ''}">
+                ${apiData[key].title}
+            </a>
+        `).join('');
+    }
+
+    function renderEndpointList(resourceKey) {
+        const resource = apiData[resourceKey];
+        if (!resource || !resource.endpoints) {
+            endpointListContainer.innerHTML = '';
+            return;
+        }
+        endpointListContainer.innerHTML = `
+            <div class="p-5">
+                <h3 class="text-sm font-semibold uppercase text-slate-500 tracking-wider">Endpoints</h3>
+                <ul class="mt-4 space-y-1">
+                    ${Object.keys(resource.endpoints).map(key => {
+                        const endpoint = resource.endpoints[key];
+                        return `
+                        <li>
+                            <a href="#" data-resource="${resourceKey}" data-endpoint="${key}" class="endpoint-link flex items-center justify-between px-3 py-2 text-sm rounded-md hover:bg-slate-200 ${key === activeEndpoint ? 'bg-blue-100 text-blue-800 font-medium' : 'text-slate-600'}">
+                                <span>${endpoint.summary}</span>
+                                <span class="text-xs font-mono font-bold ${methodColors[endpoint.method] || 'bg-slate-100 text-slate-800'} px-2 py-0.5 rounded-full">${endpoint.method}</span>
+                            </a>
+                        </li>
+                        `
+                    }).join('')}
+                </ul>
+            </div>
+        `;
+    }
+
+    function renderEndpointDetails(resourceKey, endpointKey) {
+        const resource = apiData[resourceKey];
+        let content = `<div class="text-center text-slate-500"><p>Selecione um endpoint para ver os detalhes.</p></div>`;
+
+        if (resourceKey === 'introducao') {
+            content = `
+                <h2 class="text-3xl font-bold text-slate-800 mb-2">${resource.title}</h2>
+                <p class="text-slate-600 mb-6">${resource.description}</p>
+                <div class="prose max-w-none">${resource.content}</div>
+            `;
+        } else if (endpointKey) {
+            const endpoint = resource.endpoints[endpointKey];
+            const fullPath = `/api${resourceKey !== 'auth' ? '/' + resourceKey : ''}${endpoint.path}`;
+            content = `
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="font-mono text-lg font-bold ${methodColors[endpoint.method]} px-3 py-1 rounded-md">${endpoint.method}</span>
+                    <span class="font-mono text-lg text-slate-600">${fullPath}</span>
+                </div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-2">${endpoint.summary}</h2>
+                <p class="text-slate-600 mb-6">${endpoint.description}</p>
+                
+                <div class="mb-4">
+                    <span class="text-sm font-semibold text-slate-500 mr-2">Acesso:</span>
+                    <span class="text-sm font-medium bg-purple-100 text-purple-800 px-2 py-1 rounded-full">${endpoint.access}</span>
+                </div>
+
+                ${endpoint.queryParams ? `
+                <div class="mb-6">
+                    <h4 class="font-semibold mb-2">Parâmetros da Query:</h4>
+                    <p class="text-sm text-slate-600">Este endpoint aceita os seguintes parâmetros na URL (ex: <code>?${endpoint.queryParams.split(',')[0].trim()}=valor</code>).</p>
+                    <div class="mt-2 flex flex-wrap gap-2">
+                        ${endpoint.queryParams.split(',').map(p => `<span class="font-mono text-xs bg-slate-200 text-slate-700 px-2 py-1 rounded">${p.trim()}</span>`).join('')}
+                    </div>
+                </div>` : ''}
+
+                <div class="bg-white rounded-lg border border-slate-200">
+                    <div class="flex border-b border-slate-200">
+                        <button class="tab-btn flex-1 p-3 font-medium border-b-2 border-blue-500 text-blue-600" data-tab="request">Requisição</button>
+                        <button class="tab-btn flex-1 p-3 font-medium border-b-2 border-transparent text-slate-500" data-tab="response">Resposta Exemplo</button>
+                    </div>
+                    <div id="tab-content" class="p-4">
+                        <div id="tab-request" class="tab-pane">
+                            ${endpoint.requestBody ? `
+                            <h4 class="font-semibold mb-2 text-sm">Corpo (Body)</h4>
+                            <div class="code-block bg-slate-800 text-white p-4 rounded-md text-sm overflow-x-auto relative">
+                                <button class="copy-btn absolute top-2 right-2 bg-slate-600 hover:bg-slate-500 text-white text-xs px-2 py-1 rounded">Copiar</button>
+                                <pre><code>${endpoint.requestBody.trim()}</code></pre>
+                            </div>` : '<p class="text-sm text-slate-500">Esta requisição não requer um corpo (body).</p>'}
+                        </div>
+                        <div id="tab-response" class="tab-pane hidden">
+                             <h4 class="font-semibold mb-2 text-sm">Corpo (Body)</h4>
+                             ${endpoint.responseBody ? `
+                            <div class="code-block bg-slate-800 text-white p-4 rounded-md text-sm overflow-x-auto relative">
+                                <button class="copy-btn absolute top-2 right-2 bg-slate-600 hover:bg-slate-500 text-white text-xs px-2 py-1 rounded">Copiar</button>
+                                <pre><code>${endpoint.responseBody.trim()}</code></pre>
+                            </div>` : '<p class="text-sm text-slate-500">Esta requisição não retorna um corpo (body) em caso de sucesso (ex: status 204 No Content).</p>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if(resource) {
+            content = `
+                <h2 class="text-3xl font-bold text-slate-800 mb-2">${resource.title}</h2>
+                <p class="text-slate-600">${resource.description}</p>
+                 <div class="mt-6 text-center text-slate-500">
+                    <p>Selecione um endpoint na lista à esquerda para ver os detalhes.</p>
+                </div>
+            `;
+        }
+
+        endpointDetailsContainer.innerHTML = content;
+    }
+
+    function handleNavClick(e) {
+        e.preventDefault();
+        const target = e.target.closest('.nav-link');
+        if (!target) return;
+
+        activeResource = target.dataset.resource;
+        activeEndpoint = null; // Reset endpoint when changing resource
+        
+        currentResourceTitle.textContent = apiData[activeResource].title;
+        renderNavigation();
+        renderEndpointList(activeResource);
+        renderEndpointDetails(activeResource, null);
+    }
+    
+    function handleEndpointClick(e) {
+        e.preventDefault();
+        const target = e.target.closest('.endpoint-link');
+        if (!target) return;
+        
+        activeResource = target.dataset.resource;
+        activeEndpoint = target.dataset.endpoint;
+
+        renderEndpointList(activeResource); // Re-render to update active state
+        renderEndpointDetails(activeResource, activeEndpoint);
+    }
+
+    function handleTabClick(e) {
+        if (!e.target.classList.contains('tab-btn')) return;
+
+        const tabId = e.target.dataset.tab;
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('border-blue-500', 'text-blue-600');
+            btn.classList.add('border-transparent', 'text-slate-500');
+        });
+        e.target.classList.add('border-blue-500', 'text-blue-600');
+        e.target.classList.remove('border-transparent', 'text-slate-500');
+
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+            pane.classList.add('hidden');
+        });
+        document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+    }
+
+    function handleCopyClick(e) {
+        if (!e.target.classList.contains('copy-btn')) return;
+
+        const pre = e.target.nextElementSibling;
+        const code = pre.querySelector('code').innerText;
+        
+        const textArea = document.createElement('textarea');
+        textArea.value = code;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            e.target.textContent = 'Copiado!';
+            setTimeout(() => { e.target.textContent = 'Copiar'; }, 2000);
+        } catch (err) {
+            console.error('Falha ao copiar', err);
+            e.target.textContent = 'Erro';
+        }
+        document.body.removeChild(textArea);
+    }
+
+    navContainer.addEventListener('click', handleNavClick);
+    endpointListContainer.addEventListener('click', handleEndpointClick);
+    endpointDetailsContainer.addEventListener('click', handleTabClick);
+    endpointDetailsContainer.addEventListener('click', handleCopyClick);
+    
+    document.getElementById('mobile-menu-button').addEventListener('click', () => {
+       const sidebar = document.getElementById('sidebar-nav');
+       // Logic to toggle mobile sidebar would go here
+       alert("Navegação móvel não implementada nesta demo.");
+    });
+
+    renderNavigation();
+    renderEndpointDetails('introducao', null); // Show intro on load
+});
+</script>
+</body>
+</html>

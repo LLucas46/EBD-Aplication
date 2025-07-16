@@ -1,0 +1,169 @@
+// Conteúdo para: backend/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // Mude para "mysql" se você alterou para MySQL
+  url      = env("DATABASE_URL")
+}
+
+model Plano {
+  id                  Int                @id @default(autoincrement())
+  nome                String             @unique // Básico, Médio, Avançado
+  preco               Float
+  duracaoMeses        Int                @default(1) // Duração do plano em meses
+  permissoes          PlanoPermissao[]
+  igrejas             Igreja[]
+  descricao           String?
+
+  @@map("planos")
+}
+
+model Permissao {
+  id                  Int                @id @default(autoincrement())
+  chave               String             @unique // Ex: "CADASTRAR_MAX_ALUNOS", "CRIAR_ESCOLA"
+  descricao           String
+  planos              PlanoPermissao[]
+
+  @@map("permissoes")
+}
+
+model PlanoPermissao {
+  planoId             Int
+  permissaoId         Int
+  valorLimite         Int?               // Ex: 50 para MAX_ALUNOS, null para permissões booleanas
+  plano               Plano              @relation(fields: [planoId], references: [id], onDelete: Cascade)
+  permissao           Permissao          @relation(fields: [permissaoId], references: [id], onDelete: Cascade)
+
+  @@id([planoId, permissaoId])
+  @@map("plano_permissoes")
+}
+
+model Igreja {
+  id                  Int                @id @default(autoincrement())
+  nome                String
+  planoId             Int
+  plano               Plano              @relation(fields: [planoId], references: [id])
+  dataInicioPlano     DateTime           @default(now())
+  dataFimPlano        DateTime
+  adminPrincipalId    Int?               @unique
+  adminPrincipal      Usuario?           @relation("AdminDaIgreja", fields: [adminPrincipalId], references: [id], onDelete: SetNull)
+  superintendencias   Superintendencia[]
+  usuarios            Usuario[]          @relation("UsuariosDaIgreja")
+
+  @@map("igrejas")
+}
+
+enum PapelUsuario {
+  SUPER_ADMIN 
+  ADMIN_IGREJA
+  ADMIN_ESCOLA
+  SUPERINTENDENTE
+  DIRETOR
+  PROFESSOR
+  EDITOR
+}
+
+model Usuario {
+  id                  Int                @id @default(autoincrement())
+  email               String             @unique
+  senhaHash           String
+  nome                String
+  papel               PapelUsuario
+  igrejaId            Int?
+  igreja              Igreja?             @relation("UsuariosDaIgreja", fields: [igrejaId], references: [id], onDelete: Cascade)
+  igrejaAdministrada  Igreja?            @relation("AdminDaIgreja") // Relação para o admin principal
+  escolaAtivaId       Int?
+  classesComoPrincipal Classe[] @relation("ProfessorPrincipalDaClasse")
+  classesLecionadas   ProfessorPorClasse[]
+  arrecadacoesRegistradas ArrecadacaoClasse[]
+
+  @@map("usuarios")
+}
+
+model Superintendencia {
+  id                  Int                @id @default(autoincrement())
+  nome                String
+  igrejaId            Int
+  igreja              Igreja             @relation(fields: [igrejaId], references: [id], onDelete: Cascade)
+  escolas             Escola[]
+
+  @@map("superintendencias")
+}
+
+model Escola {
+  id                  Int                @id @default(autoincrement())
+  nome                String
+  superintendenciaId  Int
+  superintendencia    Superintendencia   @relation(fields: [superintendenciaId], references: [id], onDelete: Cascade)
+  diretorId           Int? // FK para Usuario com papel DIRETOR (precisará ser um Usuario)
+  classes             Classe[]
+
+  @@map("escolas")
+}
+
+model Classe {
+  id                  Int                @id @default(autoincrement())
+  nomeTurma           String
+  escolaId            Int
+  escola              Escola             @relation(fields: [escolaId], references: [id], onDelete: Cascade)
+  professores         ProfessorPorClasse[]
+  professorPrincipalId Int?    // Chave estrangeira opcional para Usuario
+  professorPrincipal   Usuario? @relation("ProfessorPrincipalDaClasse", fields: [professorPrincipalId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  alunos              Aluno[]
+  arrecadacoes        ArrecadacaoClasse[]
+  presencas           PresencaAluno[]
+
+  @@map("classes")
+}
+
+model ProfessorPorClasse {
+  usuarioId           Int // Deve ser um Usuario com papel PROFESSOR
+  classeId            Int
+  usuario             Usuario            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  classe              Classe             @relation(fields: [classeId], references: [id], onDelete: Cascade)
+
+  @@id([usuarioId, classeId])
+  @@map("professor_por_classe")
+}
+
+model Aluno {
+  id                  Int                @id @default(autoincrement())
+  nomeCompleto        String
+  dataNascimento      DateTime
+  classeId            Int
+  classe              Classe             @relation(fields: [classeId], references: [id], onDelete: Cascade)
+  ativo               Boolean            @default(true)
+  presencas           PresencaAluno[]
+
+  @@map("alunos")
+}
+
+model PresencaAluno {
+  id                  Int                @id @default(autoincrement())
+  alunoId             Int
+  aluno               Aluno              @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  classeId            Int
+  classe              Classe             @relation(fields: [classeId], references: [id], onDelete: Cascade)
+  dataAula            DateTime
+  presente            Boolean
+  observacao          String?
+
+  @@unique([alunoId, dataAula], name: "alunoId_dataAula") 
+  @@map("presencas_alunos")
+}
+
+
+model ArrecadacaoClasse {
+  id                  Int                @id @default(autoincrement())
+  classeId            Int
+  classe              Classe             @relation(fields: [classeId], references: [id], onDelete: Cascade)
+  dataReuniaoCulto    DateTime
+  valorArrecadado     Float
+  registradoPorUsuarioId Int
+  registradoPor       Usuario            @relation(fields: [registradoPorUsuarioId], references: [id], onDelete: Restrict)
+
+  @@map("arrecadacoes_classe")
+}
